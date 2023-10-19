@@ -20,64 +20,85 @@ using namespace std;
         // spares: same as strike, but only 1 extra 
 
 
-int slidingWindowsScore(string input){
+int slidingWindowsScore(string& input) {
     string::iterator iter = input.begin();
     vector<int> throws;
-    string::iterator peek1 = iter+1;
-    string::iterator peek2 = iter+3;
-    int inputLen = input.size();
+    string::iterator peek1 = iter + 1;
+    string::iterator peek2 = peek1 + 2;
 
-    int iterHit = 0;
-    int peek1Hit = 0;
-    int peek2Hit = 0;
     int score = 0;
-    for (int roll = 0; roll < 19; roll++)
-    {
-        iterHit = 0;
-        peek1Hit = 0;
-        peek2Hit = 0;
-        if(*iter == '-' || isdigit(*iter)){             // 1-9 
-            throws.push_back(*iter - 48 *isdigit(*iter));    // evaluates to zero if a miss
-        }
-        else if(*iter == '/' && roll% 2 == 1){          // / ?
-            if(*peek1 == 'X'){                              // / X
-                throws.push_back(20 - throws.back());
-            }
-            else if(isdigit(*peek1)){                       // / 1-9
-                throws.push_back(10 - throws.back() + *peek1 - 48);
+    for (int roll = 0; roll < 18; roll++) {
 
+        peek1 = roll % 2 == 0 ? iter + 1: iter +2; // on roll == even only one space between iter and peek1, else two
+        peek2 = roll % 2 == 0 || *peek1 == 'X' ? peek1 + 2: peek1+1; // on roll == even two space between peek2 and peek1, else one
+
+        if (*iter == '-' || isdigit(*iter)) {                               // 1-9 
+            throws.push_back((*iter - 48) * isdigit(*iter));  // evaluates to zero if a miss
+        } 
+        else if (*iter == '/' && roll % 2 == 1) {                           // / ?
+            if (*peek1 == 'X') {                                                // / X
+
+                throws.push_back(20 - throws.back());
+            } 
+            else if (isdigit(*peek1)) {                                         // / 1-9
+                throws.push_back(10 - throws.back() + *peek1 - 48);
             }
-        }
-        else if (*iter == 'X' && roll % 2 == 0){        // X ? ?
-            roll++;
-            peek1 += 1;
-            peek2 += 1;
-            if(isdigit(*peek1)){                            // X 1-9 ?
-                if(isdigit(*peek2)){                            // X 1-9 1-9
+        } 
+        else if (*iter == 'X' && roll % 2 == 0) {                           // X ? ?
+            peek1++;
+            roll ++;
+            if (isdigit(*peek1)) {                                              // X 1-9 ?
+                if (isdigit(*peek2)) {                                              // X 1-9 1-9
                     throws.push_back(10 + *peek1 - 48 + *peek2 - 48);
-                }
-                else if(*peek2 == '/'){                         // X 1-9 /
+                } 
+                else if (*peek2 == '/') {                                           // X 1-9 /
                     throws.push_back(20);
                 }
-            }
-            else if(*peek1 == 'X'){                     // X X ?
-                if(isdigit(*peek2)){                        // X X 1-9
+            } 
+            else if (*peek1 == 'X') {                                           // X X ?
+                peek2++;
+                if (isdigit(*peek2)) {                                              // X X 1-9
                     throws.push_back(20 + *peek2 - 48);
-                }
-                else if(*peek2 == 'X'){                     // X X X
+                } 
+                else if (*peek2 == 'X') {                                           // X X X
                     throws.push_back(30);
                 }
             }
         }
         score += throws.back();
-        cout << "headers: " << *iter <<" "<< *peek1 << " " << *peek2 << " score: " << throws.back() << endl;
+        cout << "headers: " << *iter << " " << *peek1 << " " << *peek2 << " score: " << throws.back() << endl;
 
-        iter  = input.begin() + 3*(roll / 2) % inputLen;
-        peek1 = input.begin() + 3*((roll/ 2) + 1) % inputLen;
-        peek2 = input.begin() + 3*((roll/ 2) + 2) % inputLen;
+        iter += roll%2==0? 1:2;
     }
     
-    return score;
+    // we pick back up in round 10 and apply special rules
+    int lastRoundScore = 0;
+    peek1 = iter+1;
+    peek2 = peek1+1;
+    if(*iter == 'X'){
+        lastRoundScore += 10;
+        peek1 ++;
+        if (*peek1 == 'X'){
+            lastRoundScore += 10;
+            peek2 += 2;
+            if(*peek2 == 'X'){
+                lastRoundScore += 10;
+            }
+            else{
+                lastRoundScore += (*peek2 - 48) * isdigit(*peek2);
+            } 
+        }
+        else{
+            lastRoundScore += (*peek1 - 48) * isdigit(*peek1);
+        }     
+    }
+    else if (isdigit(*iter) && *peek1 != '/'){
+        lastRoundScore += *iter - 48;
+    }
+    else if (*peek1 == '/'){
+        lastRoundScore += (*peek2 - 48) * isdigit(*peek2) + 10;
+    }
+    return score + lastRoundScore;
 }
 
 
