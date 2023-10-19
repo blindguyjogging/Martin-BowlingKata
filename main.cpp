@@ -19,7 +19,69 @@ using namespace std;
         // strikes: the score is 10 + a + b where a and b are the next throws
         // spares: same as strike, but only 1 extra 
 
-int CalculateTurnScore(vector<int>& specialThrows, vector<int>& throws, string::iterator& iter,string::iterator& iter_end, int turn){
+
+int slidingWindowsScore(string input){
+    string::iterator iter = input.begin();
+    vector<int> throws;
+    string::iterator peek1 = iter+1;
+    string::iterator peek2 = iter+3;
+    int inputLen = input.size();
+
+    int iterHit = 0;
+    int peek1Hit = 0;
+    int peek2Hit = 0;
+    int score = 0;
+    for (int roll = 0; roll < 19; roll++)
+    {
+        iterHit = 0;
+        peek1Hit = 0;
+        peek2Hit = 0;
+        if(*iter == '-' || isdigit(*iter)){             // 1-9 
+            throws.push_back(*iter - 48 *isdigit(*iter));    // evaluates to zero if a miss
+        }
+        else if(*iter == '/' && roll% 2 == 1){          // / ?
+            if(*peek1 == 'X'){                              // / X
+                throws.push_back(20 - throws.back());
+            }
+            else if(isdigit(*peek1)){                       // / 1-9
+                throws.push_back(10 - throws.back() + *peek1 - 48);
+
+            }
+        }
+        else if (*iter == 'X' && roll % 2 == 0){        // X ? ?
+            roll++;
+            peek1 += 1;
+            peek2 += 1;
+            if(isdigit(*peek1)){                            // X 1-9 ?
+                if(isdigit(*peek2)){                            // X 1-9 1-9
+                    throws.push_back(10 + *peek1 - 48 + *peek2 - 48);
+                }
+                else if(*peek2 == '/'){                         // X 1-9 /
+                    throws.push_back(20);
+                }
+            }
+            else if(*peek1 == 'X'){                     // X X ?
+                if(isdigit(*peek2)){                        // X X 1-9
+                    throws.push_back(20 + *peek2 - 48);
+                }
+                else if(*peek2 == 'X'){                     // X X X
+                    throws.push_back(30);
+                }
+            }
+        }
+        score += throws.back();
+        cout << "headers: " << *iter <<" "<< *peek1 << " " << *peek2 << " score: " << throws.back() << endl;
+
+        iter  = input.begin() + 3*(roll / 2) % inputLen;
+        peek1 = input.begin() + 3*((roll/ 2) + 1) % inputLen;
+        peek2 = input.begin() + 3*((roll/ 2) + 2) % inputLen;
+    }
+    
+    return score;
+}
+
+
+int calculateTurnScore(vector<int>& specialThrows, vector<int>& throws, string::iterator& iter,string::iterator& iter_end, int turn){
     int roll_score = 0;
     int score = 0;
     for (int roll = 0; roll <= 1; roll++){          
@@ -90,7 +152,7 @@ int bowlingMethod(string input){
     // main loop
     for ( turn; turn <= 10; turn++)  
     {    
-        score += CalculateTurnScore(specialThrows,throws,iter,iter_end,turn);
+        score += calculateTurnScore(specialThrows,throws,iter,iter_end,turn);
         if(score == -1){
             return -1;
         }
@@ -152,7 +214,8 @@ int main(){
     {
         cout << "Please input throws:";
         getline(cin, input);
-        int score = bowlingMethod(input);
+        //int score = bowlingMethod(input);
+        int score = slidingWindowsScore(input);
         if(score == -1){
             cout << "Error occured, try again" << endl;
         }
